@@ -11,6 +11,7 @@ require (
 )
 
 require (
+	github.com/confluentinc/confluent-kafka-go v1.9.2
 	github.com/go-resty/resty/v2 v2.11.0
 	github.com/ilyakaznacheev/cleanenv v1.5.0
 )

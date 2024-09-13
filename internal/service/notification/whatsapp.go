@@ -6,7 +6,7 @@ type WhatsappService struct {
 	Client *whatsapp.WppService
 }
 
-func NewWhatsappService(instanceId, authToken string) (*WhatsappService, error) {
+func newWhatsappService(instanceId, authToken string) (*WhatsappService, error) {
 	wpp, err := whatsapp.New(instanceId, authToken)
 	if err != nil {
 		return nil, err

@@ -2,7 +2,6 @@ package notification
 
 import (
 	"errors"
-	"github.com/tgkzz/notification/internal/config"
 )
 
 const (
@@ -15,27 +14,25 @@ type NotificationFactory interface {
 }
 
 type NotifierService struct {
-	WhatsappConfig config.WhatsappConfig
+	WhatsappService *WhatsappService
 }
 
-func CreateNotifierService() (NotifierService, error) {
-	return NotifierService{}, nil
+func CreateNotifierService(instanceId, authToken string) (NotifierService, error) {
+	wppService, err := newWhatsappService(instanceId, authToken)
+	if err != nil {
+		return NotifierService{}, err
+	}
+
+	return NotifierService{
+		WhatsappService: wppService,
+	}, nil
 }
 
 func (n *NotifierService) GetNotificationService(name string) (NotificationFactory, error) {
 	switch name {
 	case Whatsapp:
-		return n.createWhatsappService()
+		return n.WhatsappService, nil
 	default:
 		return nil, errors.New("unknown service name")
 	}
-}
-
-func (n *NotifierService) createWhatsappService() (NotificationFactory, error) {
-	srv, err := NewWhatsappService(n.WhatsappConfig.InstanceId, n.WhatsappConfig.AuthToken)
-	if err != nil {
-		return nil, err
-	}
-
-	return srv, nil
 }
