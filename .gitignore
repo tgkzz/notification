@@ -1,0 +1,10 @@
+.idea/
+*.svg
+*.json
+vendor/
+*.zip
+bin/
+/bin
+.env
+.idea
+*.yaml

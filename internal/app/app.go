@@ -10,8 +10,8 @@ type App struct {
 	KafkaApp *kafka.App
 }
 
-func New(ctx context.Context, log *slog.Logger) (*App, error) {
-	k, err := kafka.New(log)
+func New(ctx context.Context, log *slog.Logger, wppInstanceId, wppToken string) (*App, error) {
+	k, err := kafka.New(log, wppInstanceId, wppToken)
 	if err != nil {
 		return nil, err
 	}

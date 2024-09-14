@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"github.com/go-resty/resty/v2"
-	"net/url"
 )
 
 const UltraMsgBaseUrl = "https://api.ultramsg.com/"
@@ -30,8 +29,8 @@ func (s *WppService) ProcessMessage(to, msg string) error {
 
 	req, err := s.ultraMsgClient.R().
 		SetQueryParams(map[string]string{
-			"to":  to,
-			"msg": url.QueryEscape(msg),
+			"to":   to,
+			"body": msg,
 		}).Post(route)
 	if err != nil {
 		return err

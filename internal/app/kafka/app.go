@@ -1,27 +1,27 @@
 package kafka
 
 import (
-	"fmt"
 	"github.com/confluentinc/confluent-kafka-go/kafka"
+	"github.com/tgkzz/notification/internal/handler"
+	"github.com/tgkzz/notification/internal/service/notification"
 	"github.com/tgkzz/notification/pkg/logger"
 	"log/slog"
 	"os"
 	"os/signal"
 	"syscall"
-	"time"
 )
 
-const topic = "notifications"
+const Topic = "notifications"
 
-// App TODO: make handler to redirect messages over there
 type App struct {
 	consumer *kafka.Consumer
 	log      *slog.Logger
+	handler  handler.Handler
 }
 
-func New(log *slog.Logger) (*App, error) {
+func New(log *slog.Logger, wppInstance, wppToken string) (*App, error) {
 	c, err := kafka.NewConsumer(&kafka.ConfigMap{
-		"bootstrap.servers": "localhost:52160",
+		"bootstrap.servers": "localhost:51807",
 		"group.id":          "kafka-go-getting-started",
 		"auto.offset.reset": "earliest",
 	})
@@ -29,11 +29,18 @@ func New(log *slog.Logger) (*App, error) {
 		return nil, err
 	}
 
-	if err = c.SubscribeTopics([]string{topic}, nil); err != nil {
+	if err = c.SubscribeTopics([]string{Topic}, nil); err != nil {
 		return nil, err
 	}
 
-	return &App{consumer: c, log: log}, nil
+	n, err := notification.CreateNotifierService(wppInstance, wppToken, log)
+	if err != nil {
+		return nil, err
+	}
+
+	h := handler.New(log, &n)
+
+	return &App{consumer: c, log: log, handler: h}, nil
 }
 
 func (a *App) MustRun() {
@@ -43,21 +50,19 @@ func (a *App) MustRun() {
 }
 
 func (a *App) run() error {
-	const op = "kafka.App"
 
-	go func() {
-		a.Consume()
-	}()
+	a.Consume()
 
 	return nil
 }
 
+// Consume TODO: maybe use transactions in order to exactly send message?
 func (a *App) Consume() {
 	const op = "kafka.Consume"
 
 	l := a.log.With(slog.String("op", op))
 
-	l.Info("starting to consume messages from server %s", "localhost:52160")
+	l.Info("starting to consume messages from server", slog.Any("kafka server", "localhost:52160"))
 
 	sigchan := make(chan os.Signal, 1)
 	signal.Notify(sigchan, syscall.SIGINT, syscall.SIGTERM)
@@ -66,16 +71,21 @@ func (a *App) Consume() {
 	for run {
 		select {
 		case sig := <-sigchan:
-			l.Warn("Caught signal %v: terminating", sig)
+			l.Warn("Caught signal of terminating", slog.Any("sig", sig))
 			run = false
 		default:
-			ev, err := a.consumer.ReadMessage(100 * time.Millisecond)
+			ev, err := a.consumer.ReadMessage(-1)
 			if err != nil {
 				l.Error("Failed to read message", logger.Err(err))
 				continue
 			}
-			fmt.Printf("Consumed event from topic %s: key = %-10s value = %s\n",
-				*ev.TopicPartition.Topic, string(ev.Key), string(ev.Value))
+			if err = a.handler.Gateway(ev); err != nil {
+				l.Error("failed to read msg", logger.Err(err))
+				return
+			}
+			if _, err = a.consumer.CommitMessage(ev); err != nil {
+				l.Error("failed to commit msg", logger.Err(err))
+			}
 		}
 	}
 }

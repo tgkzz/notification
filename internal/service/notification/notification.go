@@ -2,6 +2,7 @@ package notification
 
 import (
 	"errors"
+	"log/slog"
 )
 
 const (
@@ -17,8 +18,8 @@ type NotifierService struct {
 	WhatsappService *WhatsappService
 }
 
-func CreateNotifierService(instanceId, authToken string) (NotifierService, error) {
-	wppService, err := newWhatsappService(instanceId, authToken)
+func CreateNotifierService(instanceId, authToken string, log *slog.Logger) (NotifierService, error) {
+	wppService, err := newWhatsappService(instanceId, authToken, log)
 	if err != nil {
 		return NotifierService{}, err
 	}
