@@ -1,10 +1,10 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"github.com/confluentinc/confluent-kafka-go/kafka"
 	"github.com/go-faker/faker/v4"
+	"github.com/goccy/go-json"
 	"github.com/tgkzz/notification/dto"
 	kafkaApp "github.com/tgkzz/notification/internal/app/kafka"
 )

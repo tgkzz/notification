@@ -1,8 +1,8 @@
 package handler
 
 import (
-	"encoding/json"
 	"github.com/confluentinc/confluent-kafka-go/kafka"
+	"github.com/goccy/go-json"
 	"github.com/tgkzz/notification/dto"
 	"github.com/tgkzz/notification/internal/service/notification"
 	"log/slog"
