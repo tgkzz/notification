@@ -1,14 +1,12 @@
 package kafka
 
 import (
+	"context"
 	"github.com/confluentinc/confluent-kafka-go/kafka"
 	"github.com/tgkzz/notification/internal/handler"
 	"github.com/tgkzz/notification/internal/service/notification"
 	"github.com/tgkzz/notification/pkg/logger"
 	"log/slog"
-	"os"
-	"os/signal"
-	"syscall"
 )
 
 const Topic = "notifications"
@@ -43,35 +41,33 @@ func New(log *slog.Logger, wppInstance, wppToken string) (*App, error) {
 	return &App{consumer: c, log: log, handler: h}, nil
 }
 
-func (a *App) MustRun() {
-	if err := a.run(); err != nil {
+func (a *App) MustRun(ctx context.Context) {
+	if err := a.run(ctx); err != nil {
 		panic(err)
 	}
 }
 
-func (a *App) run() error {
+func (a *App) run(ctx context.Context) error {
 
-	a.Consume()
+	a.Consume(ctx)
 
 	return nil
 }
 
 // Consume TODO: maybe use transactions in order to exactly send message?
-func (a *App) Consume() {
+// Consume TODO: realize parallel processing of messages from kafka
+func (a *App) Consume(ctx context.Context) {
 	const op = "kafka.Consume"
 
 	l := a.log.With(slog.String("op", op))
 
 	l.Info("starting to consume messages from server", slog.Any("kafka server", "localhost:52160"))
 
-	sigchan := make(chan os.Signal, 1)
-	signal.Notify(sigchan, syscall.SIGINT, syscall.SIGTERM)
-
 	run := true
 	for run {
 		select {
-		case sig := <-sigchan:
-			l.Warn("Caught signal of terminating", slog.Any("sig", sig))
+		case <-ctx.Done():
+			l.Warn("Context canceled, stopping consumer")
 			run = false
 		default:
 			ev, err := a.consumer.ReadMessage(-1)
@@ -93,7 +89,7 @@ func (a *App) Consume() {
 func (a *App) Stop() {
 	const op = "kafka.Stop"
 
-	a.log.With(slog.String("op", op)).Info("stopping kafka server")
+	a.log.With(slog.String("op", op)).Info("stopping kafka consumer")
 
 	if err := a.consumer.Close(); err != nil {
 		panic(err)

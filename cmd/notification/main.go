@@ -22,7 +22,7 @@ func main() {
 		panic(err)
 	}
 
-	go application.KafkaApp.MustRun()
+	go application.KafkaApp.MustRun(ctx)
 
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, syscall.SIGTERM, syscall.SIGINT)
