@@ -16,6 +16,7 @@ type WhatsappConfig struct {
 	AuthToken  string `yaml:"auth_token"`
 }
 
+// MustLoad TODO: add kafka server in config
 func MustLoad() *Config {
 	configPath := fetchConfigPath()
 	if configPath == "" {
